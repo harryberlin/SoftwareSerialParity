@@ -1,32 +1,32 @@
 /*
-SoftwareSerial.cpp (formerly NewSoftSerial.cpp) - 
-Multi-instance software serial library for Arduino/Wiring
--- Interrupt-driven receive and other improvements by ladyada
+  SoftwareSerial.cpp (formerly NewSoftSerial.cpp) -
+  Multi-instance software serial library for Arduino/Wiring
+  -- Interrupt-driven receive and other improvements by ladyada
    (http://ladyada.net)
--- Tuning, circular buffer, derivation from class Print/Stream,
+  -- Tuning, circular buffer, derivation from class Print/Stream,
    multi-instance support, porting to 8MHz processors,
-   various optimizations, PROGMEM delay tables, inverse logic and 
+   various optimizations, PROGMEM delay tables, inverse logic and
    direct port writing by Mikal Hart (http://www.arduiniana.org)
--- Pin change interrupt macros by Paul Stoffregen (http://www.pjrc.com)
--- 20MHz processor support by Garrett Mace (http://www.macetech.com)
--- ATmega1280/2560 support by Brett Hagman (http://www.roguerobotics.com/)
+  -- Pin change interrupt macros by Paul Stoffregen (http://www.pjrc.com)
+  -- 20MHz processor support by Garrett Mace (http://www.macetech.com)
+  -- ATmega1280/2560 support by Brett Hagman (http://www.roguerobotics.com/)
 
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-The latest version of this library can always be found at
-http://arduiniana.org.
+  The latest version of this library can always be found at
+  http://arduiniana.org.
 */
 
 // When set, _DEBUG co-opts pins 11 and 13 for debugging with an
@@ -35,9 +35,9 @@ http://arduiniana.org.
 #define _DEBUG 0
 #define _DEBUG_PIN1 11
 #define _DEBUG_PIN2 13
-// 
+//
 // Includes
-// 
+//
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include <Arduino.h>
@@ -48,7 +48,7 @@ http://arduiniana.org.
 // Statics
 //
 SoftwareSerialParity *SoftwareSerialParity::active_object = 0;
-uint8_t SoftwareSerialParity::_receive_buffer[_SS_MAX_RX_BUFF]; 
+uint8_t SoftwareSerialParity::_receive_buffer[_SS_MAX_RX_BUFF];
 volatile uint8_t SoftwareSerialParity::_receive_buffer_tail = 0;
 volatile uint8_t SoftwareSerialParity::_receive_buffer_head = 0;
 
@@ -77,13 +77,13 @@ inline void DebugPulse(uint8_t, uint8_t) {}
 // Private methods
 //
 
-/* static */ 
-inline void SoftwareSerialParity::tunedDelay(uint16_t delay) { 
+/* static */
+inline void SoftwareSerialParity::tunedDelay(uint16_t delay) {
   _delay_loop_2(delay);
 }
 
 // This function sets the current object as the "listening"
-// one and returns true if it replaces another 
+// one and returns true if it replaces another
 bool SoftwareSerialParity::listen()
 {
   if (!_rx_delay_stopbit)
@@ -124,9 +124,9 @@ void SoftwareSerialParity::recv()
 {
 
 #if GCC_VERSION < 40302
-// Work-around for avr-gcc 4.3.0 OSX version bug
-// Preserve the registers that the compiler misses
-// (courtesy of Arduino forum user *etracer*)
+  // Work-around for avr-gcc 4.3.0 OSX version bug
+  // Preserve the registers that the compiler misses
+  // (courtesy of Arduino forum user *etracer*)
   asm volatile(
     "push r18 \n\t"
     "push r19 \n\t"
@@ -137,7 +137,7 @@ void SoftwareSerialParity::recv()
     "push r26 \n\t"
     "push r27 \n\t"
     ::);
-#endif  
+#endif
 
   uint8_t d = 0;
 
@@ -155,7 +155,7 @@ void SoftwareSerialParity::recv()
     DebugPulse(_DEBUG_PIN2, 1);
 
     // Read each of the 8 bits
-    for (uint8_t i=8; i > 0; --i)
+    for (uint8_t i = 8; i > 0; --i)
     {
       tunedDelay(_rx_delay_intrabit);
       d >>= 1;
@@ -174,8 +174,8 @@ void SoftwareSerialParity::recv()
       // save new data in buffer: tail points to where byte goes
       _receive_buffer[_receive_buffer_tail] = d; // save new byte
       _receive_buffer_tail = next;
-    } 
-    else 
+    }
+    else
     {
       DebugPulse(_DEBUG_PIN1, 1);
       _buffer_overflow = true;
@@ -191,8 +191,8 @@ void SoftwareSerialParity::recv()
   }
 
 #if GCC_VERSION < 40302
-// Work-around for avr-gcc 4.3.0 OSX version bug
-// Restore the registers that the compiler misses
+  // Work-around for avr-gcc 4.3.0 OSX version bug
+  // Restore the registers that the compiler misses
   asm volatile(
     "pop r27 \n\t"
     "pop r26 \n\t"
@@ -223,7 +223,9 @@ inline void SoftwareSerialParity::handle_interrupt()
     active_object->recv();
   }
 }
-
+#if defined(AVR_NANO_4809_328MODE)
+//pass
+#else
 #if defined(PCINT0_vect)
 ISR(PCINT0_vect)
 {
@@ -242,18 +244,18 @@ ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));
 #if defined(PCINT3_vect)
 ISR(PCINT3_vect, ISR_ALIASOF(PCINT0_vect));
 #endif
-
+#endif
 //
 // Constructor
 //
-SoftwareSerialParity::SoftwareSerialParity(uint8_t receivePin, uint8_t transmitPin , bool inverse_logic/* = false */) : 
+SoftwareSerialParity::SoftwareSerialParity(uint8_t receivePin, uint8_t transmitPin , bool inverse_logic/* = false */) :
   _rx_delay_centering(0),
   _rx_delay_intrabit(0),
   _rx_delay_stopbit(0),
   _tx_delay(0),
   _buffer_overflow(false),
   _inverse_logic(inverse_logic)
- 
+
 {
   setTX(transmitPin);
   setRX(receivePin);
@@ -302,7 +304,7 @@ uint16_t SoftwareSerialParity::subtract_cap(uint16_t num, uint16_t sub) {
 // Public methods
 //
 
-void SoftwareSerialParity::begin(long speed,uint8_t parity)
+void SoftwareSerialParity::begin(long speed, uint8_t parity)
 {
   _rx_delay_centering = _rx_delay_intrabit = _rx_delay_stopbit = _tx_delay = 0;
 
@@ -318,59 +320,66 @@ void SoftwareSerialParity::begin(long speed,uint8_t parity)
   _tx_delay = subtract_cap(bit_delay, 15 / 4);
 
   // Only setup rx when we have a valid PCINT for this pin
-  if (digitalPinToPCICR(_receivePin)) {
-    #if GCC_VERSION > 40800
-    // Timings counted from gcc 4.8.2 output. This works up to 115200 on
-    // 16Mhz and 57600 on 8Mhz.
-    //
-    // When the start bit occurs, there are 3 or 4 cycles before the
-    // interrupt flag is set, 4 cycles before the PC is set to the right
-    // interrupt vector address and the old PC is pushed on the stack,
-    // and then 75 cycles of instructions (including the RJMP in the
-    // ISR vector table) until the first delay. After the delay, there
-    // are 17 more cycles until the pin value is read (excluding the
-    // delay in the loop).
-    // We want to have a total delay of 1.5 bit time. Inside the loop,
-    // we already wait for 1 bit time - 23 cycles, so here we wait for
-    // 0.5 bit time - (71 + 18 - 22) cycles.
-    _rx_delay_centering = subtract_cap(bit_delay / 2, (4 + 4 + 75 + 17 - 23) / 4);
+  #if defined(AVR_NANO_4809_328MODE)
+    if (1) {
+  #else
+    if (digitalPinToPCICR(_receivePin)) {
+  #endif
+  #if GCC_VERSION > 40800
+      // Timings counted from gcc 4.8.2 output. This works up to 115200 on
+      // 16Mhz and 57600 on 8Mhz.
+      //
+      // When the start bit occurs, there are 3 or 4 cycles before the
+      // interrupt flag is set, 4 cycles before the PC is set to the right
+      // interrupt vector address and the old PC is pushed on the stack,
+      // and then 75 cycles of instructions (including the RJMP in the
+      // ISR vector table) until the first delay. After the delay, there
+      // are 17 more cycles until the pin value is read (excluding the
+      // delay in the loop).
+      // We want to have a total delay of 1.5 bit time. Inside the loop,
+      // we already wait for 1 bit time - 23 cycles, so here we wait for
+      // 0.5 bit time - (71 + 18 - 22) cycles.
+      _rx_delay_centering = subtract_cap(bit_delay / 2, (4 + 4 + 75 + 17 - 23) / 4);
+  
+      // There are 23 cycles in each loop iteration (excluding the delay)
+      _rx_delay_intrabit = subtract_cap(bit_delay, 23 / 4);
+  
+      // There are 37 cycles from the last bit read to the start of
+      // stopbit delay and 11 cycles from the delay until the interrupt
+      // mask is enabled again (which _must_ happen during the stopbit).
+      // This delay aims at 3/4 of a bit time, meaning the end of the
+      // delay will be at 1/4th of the stopbit. This allows some extra
+      // time for ISR cleanup, which makes 115200 baud at 16Mhz work more
+      // reliably
+  
+      if (Tparity != NONE)
+        _rx_delay_stopbit = subtract_cap(2 * bit_delay * 3 / 4, (37 + 11) / 4);
+      else
+        _rx_delay_stopbit = subtract_cap(bit_delay * 3 / 4, (37 + 11) / 4);
+  
+  
+  #else // Timings counted from gcc 4.3.2 output
+      // Note that this code is a _lot_ slower, mostly due to bad register
+      // allocation choices of gcc. This works up to 57600 on 16Mhz and
+      // 38400 on 8Mhz.
+      _rx_delay_centering = subtract_cap(bit_delay / 2, (4 + 4 + 97 + 29 - 11) / 4);
+      _rx_delay_intrabit = subtract_cap(bit_delay, 11 / 4);
+      _rx_delay_stopbit = subtract_cap(bit_delay * 3 / 4, (44 + 17) / 4);
+  #endif
 
-    // There are 23 cycles in each loop iteration (excluding the delay)
-    _rx_delay_intrabit = subtract_cap(bit_delay, 23 / 4);
-
-    // There are 37 cycles from the last bit read to the start of
-    // stopbit delay and 11 cycles from the delay until the interrupt
-    // mask is enabled again (which _must_ happen during the stopbit).
-    // This delay aims at 3/4 of a bit time, meaning the end of the
-    // delay will be at 1/4th of the stopbit. This allows some extra
-    // time for ISR cleanup, which makes 115200 baud at 16Mhz work more
-    // reliably
-    
-	if (Tparity != NONE)
-		_rx_delay_stopbit = subtract_cap(2 * bit_delay * 3 / 4, (37 + 11) / 4);
-	else
-		_rx_delay_stopbit = subtract_cap(bit_delay * 3 / 4, (37 + 11) / 4);
-	
-	
-    #else // Timings counted from gcc 4.3.2 output
-    // Note that this code is a _lot_ slower, mostly due to bad register
-    // allocation choices of gcc. This works up to 57600 on 16Mhz and
-    // 38400 on 8Mhz.
-    _rx_delay_centering = subtract_cap(bit_delay / 2, (4 + 4 + 97 + 29 - 11) / 4);
-    _rx_delay_intrabit = subtract_cap(bit_delay, 11 / 4);
-    _rx_delay_stopbit = subtract_cap(bit_delay * 3 / 4, (44 + 17) / 4);
-    #endif
-
-
-    // Enable the PCINT for the entire port here, but never disable it
-    // (others might also need it, so we disable the interrupt by using
-    // the per-pin PCMSK register).
-    *digitalPinToPCICR(_receivePin) |= _BV(digitalPinToPCICRbit(_receivePin));
-    // Precalculate the pcint mask register and value, so setRxIntMask
-    // can be used inside the ISR without costing too much time.
-    _pcint_maskreg = digitalPinToPCMSK(_receivePin);
-    _pcint_maskvalue = _BV(digitalPinToPCMSKbit(_receivePin));
-
+  #if defined(AVR_NANO_4809_328MODE)
+      attachInterrupt(_receivePin, SoftwareSerialParity::handle_interrupt, CHANGE);
+  #else
+  
+      // Enable the PCINT for the entire port here, but never disable it
+      // (others might also need it, so we disable the interrupt by using
+      // the per-pin PCMSK register).
+      *digitalPinToPCICR(_receivePin) |= _BV(digitalPinToPCICRbit(_receivePin));
+      // Precalculate the pcint mask register and value, so setRxIntMask
+      // can be used inside the ISR without costing too much time.
+      _pcint_maskreg = digitalPinToPCMSK(_receivePin);
+      _pcint_maskvalue = _BV(digitalPinToPCMSKbit(_receivePin));
+  #endif
     tunedDelay(_tx_delay); // if we were low this establishes the end
   }
 
@@ -384,10 +393,10 @@ void SoftwareSerialParity::begin(long speed,uint8_t parity)
 
 void SoftwareSerialParity::setRxIntMsk(bool enable)
 {
-    if (enable)
-      *_pcint_maskreg |= _pcint_maskvalue;
-    else
-      *_pcint_maskreg &= ~_pcint_maskvalue;
+  if (enable)
+    *_pcint_maskreg |= _pcint_maskvalue;
+  else
+    *_pcint_maskreg &= ~_pcint_maskvalue;
 }
 
 void SoftwareSerialParity::end()
@@ -454,37 +463,37 @@ size_t SoftwareSerialParity::write(uint8_t b)
   // Write each of the 8 bits
   for (uint8_t i = 8; i > 0; --i)
   {
-    if (b & 1){ // choose bit
+    if (b & 1) { // choose bit
       *reg |= reg_mask; // send 1
-	  Cparity++;
-	}
-    else{
+      Cparity++;
+    }
+    else {
       *reg &= inv_mask; // send 0
-	}
+    }
     tunedDelay(delay);
     b >>= 1;
   }
 
-    if (Tparity == ODD){ //odd parity
-		if (Cparity & 1) // choose bit
-		  *reg &= inv_mask; // send 0
-		else
-		  *reg |= reg_mask; // send 1
+  if (Tparity == ODD) { //odd parity
+    if (Cparity & 1) // choose bit
+      *reg &= inv_mask; // send 0
+    else
+      *reg |= reg_mask; // send 1
 
-		tunedDelay(delay);
-	}
+    tunedDelay(delay);
+  }
 
-    if (Tparity == EVEN){ //even parity
-		if (Cparity & 1) // choose bit
-		  *reg |= reg_mask; // send 1
-		else
-		  *reg &= inv_mask; // send 0
+  if (Tparity == EVEN) { //even parity
+    if (Cparity & 1) // choose bit
+      *reg |= reg_mask; // send 1
+    else
+      *reg &= inv_mask; // send 0
 
-		tunedDelay(delay);
-	}
+    tunedDelay(delay);
+  }
 
 
-	// restore pin to natural state
+  // restore pin to natural state
   if (inv)
     *reg &= inv_mask;
   else
@@ -492,7 +501,7 @@ size_t SoftwareSerialParity::write(uint8_t b)
 
   SREG = oldSREG; // turn interrupts back on
   tunedDelay(_tx_delay);
-  
+
   return 1;
 }
 
